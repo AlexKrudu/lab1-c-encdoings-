@@ -101,37 +101,6 @@ int main(int argc, char *argv[]) {
                 buff_cur[size] = 0;
                 size += 4;
             } else if ((buff_in[i] & 224) == 192) {
-                buff_cur[size + 3] = (uchar) (((buff_in[i + 1] & 63) + (buff_in[i] << 6)) & 255);
-                buff_cur[size + 2] = (uchar) ((buff_in[i] & 28) >> 2);
-                buff_cur[size + 1] = 0;
-                buff_cur[size] = 0;
-                i++;
-                size += 4;
-            } else if ((buff_in[i] & 240) == 224) {
-                buff_cur[size + 3] = (uchar) (((buff_in[i + 2] & 63) + (buff_in[i + 1] << 6)) & 255);
-                buff_cur[size + 2] = (uchar) (((buff_in[i + 1] & 60) >> 2) + ((buff_in[i] & 15) << 4));
-                buff_cur[size + 1] = 0;
-                buff_cur[size] = 0;
-                i += 2;
-                size += 4;
-            } else if ((buff_in[i] & 248) == 240) {
-                buff_cur[size + 3] = (uchar) (((buff_in[i + 3] & 63) + (buff_in[i + 2] << 6)) & 255);
-                buff_cur[size + 2] = (uchar) (((buff_in[i + 2] & 60) >> 2) + ((buff_in[i + 1] & 15) << 4));
-                buff_cur[size + 1] = (uchar) (((buff_in[i + 1] & 63) >> 4) + ((buff_in[i] & 7) << 2));
-                buff_cur[size] = 0;
-                i += 3;
-                size += 4;
-            }
-        }
-    } else {
-        for (int i = 0; i < len; i++) {
-            if ((buff_in[i] & 128) == 0) {
-                buff_cur[size + 3] = buff_in[i];
-                buff_cur[size + 2] = 0;
-                buff_cur[size + 1] = 0;
-                buff_cur[size] = 0;
-                size += 4;
-            } else if ((buff_in[i] & 224) == 192) {
                 if ((buff_in[i + 1] & 192) != 128 || i + 1 >= len){
                     goto invalid;
                 }
@@ -163,6 +132,54 @@ int main(int argc, char *argv[]) {
                 size += 4;
             }else {
                 invalid:
+                temp1 = buff_in[i] - 128 + 56448;
+                buff_cur[size + 2] = temp1 >> 8;
+                buff_cur[size + 3] = temp1 & 255;
+                buff_cur[size + 1] = 0;
+                buff_cur[size] = 0;
+                size += 4;
+            }
+        }
+    } else {
+        for (int i = 0; i < len; i++) {
+            if ((buff_in[i] & 128) == 0) {
+                buff_cur[size + 3] = buff_in[i];
+                buff_cur[size + 2] = 0;
+                buff_cur[size + 1] = 0;
+                buff_cur[size] = 0;
+                size += 4;
+            } else if ((buff_in[i] & 224) == 192) {
+                if ((buff_in[i + 1] & 192) != 128 || i + 1 >= len){
+                    goto invalid1;
+                }
+                buff_cur[size + 3] = (uchar) (((buff_in[i + 1] & 63) + (buff_in[i] << 6)) & 255);
+                buff_cur[size + 2] = (uchar) ((buff_in[i] & 28) >> 2);
+                buff_cur[size + 1] = 0;
+                buff_cur[size] = 0;
+                i++;
+                size += 4;
+            } else if ((buff_in[i] & 240) == 224) {
+                if ((buff_in[i + 1] & 192) != 128 || (buff_in[i + 2] & 192) != 128 || i + 2 >= len){
+                    goto invalid1;
+                }
+                buff_cur[size + 3] = (uchar) (((buff_in[i + 2] & 63) + (buff_in[i + 1] << 6)) & 255);
+                buff_cur[size + 2] = (uchar) (((buff_in[i + 1] & 60) >> 2) + ((buff_in[i] & 15) << 4));
+                buff_cur[size + 1] = 0;
+                buff_cur[size] = 0;
+                i += 2;
+                size += 4;
+            } else if ((buff_in[i] & 248) == 240) {
+                if ((buff_in[i + 1] & 192) != 128 || (buff_in[i + 2] & 192) != 128 || (buff_in[i + 3] & 192) != 128  || i + 3 >= len ){
+                    goto invalid1;
+                }
+                buff_cur[size + 3] = (uchar) (((buff_in[i + 3] & 63) + (buff_in[i + 2] << 6)) & 255);
+                buff_cur[size + 2] = (uchar) (((buff_in[i + 2] & 60) >> 2) + ((buff_in[i + 1] & 15) << 4));
+                buff_cur[size + 1] = (uchar) (((buff_in[i + 1] & 63) >> 4) + ((buff_in[i] & 7) << 2));
+                buff_cur[size] = 0;
+                i += 3;
+                size += 4;
+            }else {
+                invalid1:
                 temp1 = buff_in[i] - 128 + 56448;
                 buff_cur[size + 2] = temp1 >> 8;
                 buff_cur[size + 3] = temp1 & 255;
