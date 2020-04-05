@@ -132,6 +132,9 @@ int main(int argc, char *argv[]) {
                 buff_cur[size] = 0;
                 size += 4;
             } else if ((buff_in[i] & 224) == 192) {
+                if ((buff_in[i + 1] & 192) != 128 || i + 1 >= len){
+                    goto invalid;
+                }
                 buff_cur[size + 3] = (uchar) (((buff_in[i + 1] & 63) + (buff_in[i] << 6)) & 255);
                 buff_cur[size + 2] = (uchar) ((buff_in[i] & 28) >> 2);
                 buff_cur[size + 1] = 0;
@@ -139,6 +142,9 @@ int main(int argc, char *argv[]) {
                 i++;
                 size += 4;
             } else if ((buff_in[i] & 240) == 224) {
+                if ((buff_in[i + 1] & 192) != 128 || (buff_in[i + 2] & 192) != 128 || i + 2 >= len){
+                    goto invalid;
+                }
                 buff_cur[size + 3] = (uchar) (((buff_in[i + 2] & 63) + (buff_in[i + 1] << 6)) & 255);
                 buff_cur[size + 2] = (uchar) (((buff_in[i + 1] & 60) >> 2) + ((buff_in[i] & 15) << 4));
                 buff_cur[size + 1] = 0;
@@ -146,11 +152,22 @@ int main(int argc, char *argv[]) {
                 i += 2;
                 size += 4;
             } else if ((buff_in[i] & 248) == 240) {
+                if ((buff_in[i + 1] & 192) != 128 || (buff_in[i + 2] & 192) != 128 || (buff_in[i + 3] & 192) != 128  || i + 3 >= len ){
+                    goto invalid;
+                }
                 buff_cur[size + 3] = (uchar) (((buff_in[i + 3] & 63) + (buff_in[i + 2] << 6)) & 255);
                 buff_cur[size + 2] = (uchar) (((buff_in[i + 2] & 60) >> 2) + ((buff_in[i + 1] & 15) << 4));
                 buff_cur[size + 1] = (uchar) (((buff_in[i + 1] & 63) >> 4) + ((buff_in[i] & 7) << 2));
                 buff_cur[size] = 0;
                 i += 3;
+                size += 4;
+            }else {
+                invalid:
+                temp1 = buff_in[i] - 128 + 56448;
+                buff_cur[size + 2] = temp1 >> 8;
+                buff_cur[size + 3] = temp1 & 255;
+                buff_cur[size + 1] = 0;
+                buff_cur[size] = 0;
                 size += 4;
             }
         }
@@ -178,17 +195,23 @@ int main(int argc, char *argv[]) {
                     buff_out[size_out + 1] = (uchar)((res2 & 63) + 128);
                     size_out+= 2;
                 }
+                else if (res2 >= 56448 && res2 <= 56575){
+                    res2 -= 56448;
+                    res2 += 128;
+                    buff_out[size_out] = (uchar) (res2);
+                    size_out++;
+                }
                 else if (res2 < 65536){
                     buff_out[size_out] = (uchar)(224 + ((res2 & 258048) >> 12));
                     buff_out[size_out + 1] = (uchar)((((res2 & 4032)) >> 6) + 128);
                     buff_out[size_out + 2] = (uchar)((res2 & 63) + 128);
                     size_out += 3;
                 }
-                else if (res2 < 1114111){
-                    buff_out[size_out] = (uchar)(240 + ((res2 & 16515072) >> 18));
+                else if (res2 < 1114111) {
+                    buff_out[size_out] = (uchar) (240 + ((res2 & 16515072) >> 18));
                     buff_out[size_out + 1] = (uchar) (((res2 & 258048) >> 12) + 128);
-                    buff_out[size_out + 2] = (uchar)((((res2 & 4032)) >> 6) + 128);
-                    buff_out[size_out + 3] = (uchar)((res2 & 63) + 128);
+                    buff_out[size_out + 2] = (uchar) ((((res2 & 4032)) >> 6) + 128);
+                    buff_out[size_out + 3] = (uchar) ((res2 & 63) + 128);
                     size_out += 4;
                 }
 
@@ -208,6 +231,12 @@ int main(int argc, char *argv[]) {
                     buff_out[size_out] = (uchar)(192 + ((res2 & 4032) >> 6));
                     buff_out[size_out + 1] = (uchar)((res2 & 63) + 128);
                     size_out+= 2;
+                }
+                else if (res2 >= 56448 && res2 <= 56575){
+                    res2 -= 56448;
+                    res2 += 128;
+                    buff_out[size_out] = (uchar) (res2);
+                    size_out++;
                 }
                 else if (res2 < 65536){
                     buff_out[size_out] = (uchar)(224 + ((res2 & 258048) >> 12));
